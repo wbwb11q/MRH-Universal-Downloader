@@ -208,3 +208,4 @@ MIT License - Free to use, copy, modify, distribute with credit to MRH.
 <a href="README.FA.md">📄 مشاهده راهنمای فارسی جداگانه</a> |
 <a href="README.en.md">📄 View Separate English Guide</a>
 </p>
+</details>
