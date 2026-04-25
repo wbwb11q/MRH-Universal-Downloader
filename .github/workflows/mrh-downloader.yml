@@ -1,4 +1,4 @@
-name: Simple Downloader
+name: Final MRH Downloader
 
 on:
   push:
@@ -12,32 +12,41 @@ jobs:
   download:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    
-    - name: Install yt-dlp
-      run: |
-        pip install yt-dlp
-        yt-dlp --version
-    
-    - name: Run Download
-      run: python3 scripts/mrh_downloader.py
-    
-    - name: List files
-      run: |
-        echo "=== ALL FILES IN REPO ==="
-        find . -type f -not -path "./.git/*" | sort
-        echo "========================="
-    
-    - name: Commit
-      run: |
-        git config user.name "Bot"
-        git config user.email "bot@local"
-        git add downloads/ || true
-        git add *.mp4 *.webm *.mp3 2>/dev/null || true
-        git diff --staged --quiet || git commit -m "Add downloads [skip ci]"
-        git push || true
+      - uses: actions/checkout@v4
+      
+      - name: Download with yt-dlp directly
+        run: |
+          # Create downloads folder
+          mkdir -p downloads/youtube
+          
+          # Go to downloads folder
+          cd downloads/youtube
+          
+          # Get commit message
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit: $COMMIT_MSG"
+          
+          # Check for YouTube command
+          if [[ "$COMMIT_MSG" == *"dl-yt:"* ]]; then
+            # Extract URL
+            URL=$(echo "$COMMIT_MSG" | grep -oP 'dl-yt:\s*\Khttps?://[^\s]+')
+            echo "Downloading: $URL"
+            
+            # Download using docker (most reliable method)
+            docker run --rm -v $(pwd):/downloads mikenye/youtube-dl $URL
+          fi
+          
+          # Go back
+          cd ../..
+          
+          # List downloaded files
+          echo "=== Downloaded files ==="
+          find downloads -type f -ls
+          
+      - name: Commit files
+        run: |
+          git config user.name "MRH Bot"
+          git config user.email "bot@local"
+          git add downloads/ || true
+          git diff --staged --quiet || git commit -m "Add downloads [skip ci]"
+          git push || true
