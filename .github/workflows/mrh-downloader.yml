@@ -17,19 +17,14 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       
-    - name: Setup Python
-      uses: actions/setup-python@v5
+    - name: Setup yt-dlp with full options
+      uses: AnimMouse/setup-yt-dlp@v3
       with:
-        python-version: '3.11'
-        
-    - name: Install tools
-      run: |
-        # Install youtube-dl (works better than yt-dlp on GitHub Actions)
-        pip install youtube-dl
-        # Also install yt-dlp as fallback
-        pip install yt-dlp
-        
-    - name: Create folders
+        aria2: true          # فعال کردن دانلود چندبخشی برای سرعت
+        ejs-node: true       # پردازش چالش جاوااسکریپت یوتیوب (حل مشکل)
+        ffmpeg: true         # نصب FFmpeg برای ادغام صدا و تصویر
+      
+    - name: Create directories
       run: |
         mkdir -p downloads/youtube
         mkdir -p downloads/instagram
@@ -43,84 +38,76 @@ jobs:
         echo "full=$MSG" >> $GITHUB_OUTPUT
         echo "📝 Commit: $MSG"
         
-    - name: Download from YouTube (using youtube-dl)
+    - name: Download from YouTube
       if: contains(steps.msg.outputs.full, 'dl-yt:')
       run: |
         URL=$(echo "${{ steps.msg.outputs.full }}" | grep -oP 'dl-yt:\s*\Khttps?://[^\s]+' | head -1)
-        URL=$(echo "$URL" | sed 's/(mp3)//g' | sed 's/(mp4)//g' | xargs)
         echo "🎬 YouTube: $URL"
-        
         cd downloads/youtube
         
         if [[ "${{ steps.msg.outputs.full }}" == *"(mp3)"* ]]; then
-          echo "🎵 Downloading audio only..."
-          youtube-dl -x --audio-format mp3 --audio-quality 0 "$URL" || yt-dlp -x --audio-format mp3 "$URL"
+          echo "🎵 Downloading audio..."
+          yt-dlp -x --audio-format mp3 --audio-quality 0 \
+                 --add-header "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+                 --retries 5 --fragment-retries 5 --sleep-requests 2 \
+                 "$URL"
         else
           echo "🎥 Downloading video..."
-          youtube-dl -f "best[height<=720]" "$URL" || yt-dlp -f "best[height<=720]" "$URL"
+          yt-dlp -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]" \
+                 --merge-output-format mp4 \
+                 --add-header "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+                 --retries 5 --fragment-retries 5 --sleep-requests 2 \
+                 "$URL"
         fi
-        
         cd ../..
-        echo "✅ YouTube download completed"
         
     - name: Download from Instagram
       if: contains(steps.msg.outputs.full, 'dl-ig:')
       run: |
         URL=$(echo "${{ steps.msg.outputs.full }}" | grep -oP 'dl-ig:\s*\Khttps?://[^\s]+' | head -1)
         echo "📸 Instagram: $URL"
-        
         cd downloads/instagram
-        yt-dlp --no-playlist "$URL" || youtube-dl --no-playlist "$URL"
+        yt-dlp --no-playlist "$URL"
         cd ../..
-        echo "✅ Instagram download completed"
         
     - name: Download from GitHub
       if: contains(steps.msg.outputs.full, 'dl-gh:')
       run: |
         URL=$(echo "${{ steps.msg.outputs.full }}" | grep -oP 'dl-gh:\s*\Khttps?://[^\s]+' | head -1)
         echo "🐙 GitHub: $URL"
-        
         cd downloads/github
         curl -L -O "$URL"
         cd ../..
-        echo "✅ GitHub download completed"
         
-    - name: Download direct link
+    - name: Download direct links
       if: contains(steps.msg.outputs.full, 'dl:') && !contains(steps.msg.outputs.full, 'dl-yt:') && !contains(steps.msg.outputs.full, 'dl-ig:') && !contains(steps.msg.outputs.full, 'dl-gh:')
       run: |
         URLS=$(echo "${{ steps.msg.outputs.full }}" | sed 's/^dl: //')
-        
         cd downloads/direct
-        
         for URL in $URLS; do
           FILENAME=$(basename "$URL" | cut -d '?' -f1)
           [ -z "$FILENAME" ] && FILENAME="file_$(date +%H%M%S)"
-          echo "⬇️ Downloading: $FILENAME"
+          echo "⬇️ $FILENAME"
           curl -L -o "$FILENAME" "$URL"
         done
-        
         cd ../..
-        echo "✅ Direct downloads completed"
         
     - name: Stop command
       if: contains(steps.msg.outputs.full, 'dl-stop')
       run: |
-        echo "🛑 Emergency stop activated"
+        echo "🛑 Stopped"
         exit 0
         
     - name: Show results
       run: |
         echo ""
-        echo "=========================================="
-        echo "📁 DOWNLOADED FILES:"
-        echo "=========================================="
-        find downloads -type f -exec ls -lh {} \; 2>/dev/null || echo "No files found"
-        echo "=========================================="
+        echo "=== 📁 DOWNLOADED FILES ==="
+        find downloads -type f -exec ls -lh {} \; 2>/dev/null || echo "No files"
         
     - name: Commit files
       run: |
-        git config user.name "MRH Downloader"
-        git config.user.email "mrh@downloader.local"
+        git config user.name "MRH Bot"
+        git config user.email "bot@local"
         git add downloads/ || true
-        git diff --staged --quiet || git commit -m "MRH: Downloads completed [skip ci]"
+        git diff --staged --quiet || git commit -m "MRH: Downloads [skip ci]"
         git push || true
