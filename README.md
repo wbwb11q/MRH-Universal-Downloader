@@ -170,7 +170,7 @@ dl: https://raw.githubusercontent.com/sample/test-file/main/sample.txt
 
 | Command | Purpose | Example |
 |---------|---------|---------|
-| `dl-ig: URL` | Download from Instagram (post, reel, photo) | `dl-ig: https://www.instagram.com/reel/xxxxx` |
+| `dl-ig: URL` | Download from Instagram (post, reel, photo) | `dl-ig:  https://www.instagram.com/reel/xxxxx` |
 | `dl-gh: URL` | Download from GitHub releases | `dl-gh: https://github.com/user/repo/releases/download/v1/file.zip` |
 | `dl: URL1 URL2` | Direct download from any site | `dl: https://example.com/music.mp3 https://example.com/photo.jpg` |
 | `dl-stop` | Emergency stop | `dl-stop` |
