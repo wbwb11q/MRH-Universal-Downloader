@@ -24,7 +24,7 @@
 **USDT / USDC / DAI (BEP-20 / ERC-20 / Polygon):**  
 `0x3A90B058E51deeA95dd8912b4bA71c4b159Ec582`
 
-> *حمایت مالی کاملاً اختیاری است / Support is optional*
+> *حمایت مالی کاملاً اختیاری است / Support  is optional*
 
 ---
 
