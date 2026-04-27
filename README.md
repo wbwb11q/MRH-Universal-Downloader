@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/Made%20by-MRH-green?style=for-the-badge&logo=github">
 </p>
 
-<h1 align="center">🌍 MRH Universal Downloader</h1>
+<h1  align="center">🌍 MRH Universal Downloader</h1>
 <h3 align="center">دانلود از اینستاگرام، گیت‌هاب و هر سایت دیگر - فقط با نوشتن یک کامیت مسیج</h3>
 <h3 align="center">Download from Instagram, GitHub and   any site - Just by writing a commit message</h3>
 
