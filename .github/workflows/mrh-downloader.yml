@@ -63,13 +63,7 @@ jobs:
         mkdir -p downloads/github
         cd downloads/github
         
-        curl -L -O \
-          --retry 5 \
-          --retry-delay 2 \
-          --max-time 600 \
-          --keepalive-time 60 \
-          --continue-at - \
-          "$URL"
+        curl -L -O --retry 5 --retry-delay 2 --max-time 600 --keepalive-time 60 --continue-at - "$URL"
         
         if [ $? -eq 0 ]; then
           echo "✅ GitHub download successful"
@@ -81,97 +75,61 @@ jobs:
         cd ../..
         
     # ============================================
-    # 3. DIRECT LINK (برای فایل‌های معمولی)
+    # 3. DIRECT LINK (با تشخیص خودکار حجم و فشرده‌سازی)
     # ============================================
     - name: Download direct link
-      if: contains(steps.msg.outputs.full, 'dl:') && !contains(steps.msg.outputs.full, 'dl-ig:') && !contains(steps.msg.outputs.full, 'dl-gh:') && !contains(steps.msg.outputs.full, 'dl-big:')
+      if: contains(steps.msg.outputs.full, 'dl:') && !contains(steps.msg.outputs.full, 'dl-ig:') && !contains(steps.msg.outputs.full, 'dl-gh:')
       run: |
         URL=$(echo "${{ steps.msg.outputs.full }}" | grep -o 'dl: [^ ]*' | cut -d' ' -f2)
         echo "📁 Direct: $URL"
-        mkdir -p downloads/direct
-        cd downloads/direct
+        
+        # Extract filename from URL
         FILENAME=$(basename "$URL" | cut -d '?' -f1)
         [ -z "$FILENAME" ] && FILENAME="file_$(date +%H%M%S)"
         
-        curl -L -o "$FILENAME" \
-          --retry 5 \
-          --retry-delay 2 \
-          --max-time 600 \
-          --keepalive-time 60 \
-          "$URL"
+        # Download the file to a temporary location
+        TMP_DIR="tmp_download_$$"
+        mkdir -p "$TMP_DIR"
+        cd "$TMP_DIR"
         
-        cd ../..
-        echo "✅ Direct done"
+        echo "⬇️ Downloading $FILENAME ..."
+        curl -L -O --retry 5 --retry-delay 2 --max-time 600 --keepalive-time 60 "$URL"
         
-    # ============================================
-    # 4. BIG FILE (دانلود تکه‌تکه برای فایل‌های حجیم)
-    # ============================================
-    - name: Download large file with chunks
-      if: contains(steps.msg.outputs.full, 'dl-big:')
-      run: |
-        URL=$(echo "${{ steps.msg.outputs.full }}" | grep -o 'dl-big: [^ ]*' | cut -d' ' -f2)
-        echo "📦 Downloading large file with chunks: $URL"
-        
-        mkdir -p downloads/chunked_temp
-        cd downloads/chunked_temp
-        
-        # دریافت حجم کل فایل
-        echo "📏 Checking total file size..."
-        TOTAL_SIZE=$(curl -sI "$URL" | grep -i "Content-Length" | awk '{print $2}' | tr -d '\r')
-        
-        if [ -z "$TOTAL_SIZE" ]; then
-          echo "⚠️ Server did not provide file size. Using fallback..."
-          curl -L -O --retry 5 --retry-delay 2 "$URL"
-          mv * ../direct/
-          cd ..
-          rm -rf chunked_temp
-          echo "✅ Done with fallback"
-          exit 0
+        if [ ! -f "$FILENAME" ]; then
+          echo "❌ Download failed, file not found."
+          exit 1
         fi
         
-        TOTAL_MB=$((TOTAL_SIZE / 1024 / 1024))
-        echo "✅ Total file size: ${TOTAL_MB} MB"
+        # Get file size in MB
+        FILE_SIZE_MB=$(du -m "$FILENAME" | cut -f1)
+        echo "📊 Downloaded file size: ${FILE_SIZE_MB} MB"
         
-        # هر تکه ۲۰ مگابایت
-        CHUNK_SIZE=$((20 * 1024 * 1024))
-        START=0
-        PART=1
-        
-        echo "🔪 Downloading in chunks (20 MB each)..."
-        
-        while [ $START -lt $TOTAL_SIZE ]; do
-          END=$((START + CHUNK_SIZE - 1))
-          [ $END -ge $TOTAL_SIZE ] && END=$((TOTAL_SIZE - 1))
-          
-          echo "  ⬇️ Chunk $PART (bytes $START-$END)"
-          curl --range $START-$END -L -s -o "chunk_$PART" --retry 3 --retry-delay 2 "$URL"
-          
-          if [ $? -ne 0 ]; then
-            echo "❌ Failed to download chunk $PART"
-            exit 1
-          fi
-          
-          START=$((END + 1))
-          PART=$((PART + 1))
-        done
-        
-        # چسباندن تکه‌ها
-        echo "🔗 Merging chunks..."
-        mkdir -p ../direct
-        FINAL_NAME=$(basename "$URL" | cut -d '?' -f1)
-        [ -z "$FINAL_NAME" ] && FINAL_NAME="largefile_$(date +%Y%m%d_%H%M%S)"
-        
-        for f in chunk_*; do
-          cat "$f" >> "../direct/$FINAL_NAME"
-        done
-        
-        # پاکسازی
         cd ..
-        rm -rf chunked_temp
-        echo "✅ Large file saved as: downloads/direct/$FINAL_NAME"
+        
+        # Decide based on file size: if less than 95 MB, move directly; else, split and zip
+        if [ "$FILE_SIZE_MB" -lt 95 ]; then
+          echo "✅ File size is less than 95 MB, moving directly to downloads/direct/"
+          mkdir -p downloads/direct
+          mv "$TMP_DIR/$FILENAME" downloads/direct/
+        else
+          echo "⚙️ File size is 95 MB or larger. Splitting and compressing to avoid GitHub limit..."
+          cd "$TMP_DIR"
+          # Split the file into 95 MB parts (95*1024*1024 bytes)
+          split -b $((95*1024*1024)) "$FILENAME" "${FILENAME}.part."
+          # Zip the parts
+          zip "${FILENAME}.zip" "${FILENAME}.part."*
+          cd ..
+          mkdir -p downloads/direct
+          mv "$TMP_DIR/${FILENAME}.zip" downloads/direct/
+          echo "✅ File split and compressed into ${FILENAME}.zip"
+        fi
+        
+        # Clean up temporary directory
+        rm -rf "$TMP_DIR"
+        echo "✅ Direct download processed"
         
     # ============================================
-    # 5. STOP COMMAND
+    # 4. STOP COMMAND
     # ============================================
     - name: Stop command
       if: contains(steps.msg.outputs.full, 'dl-stop')
@@ -180,7 +138,7 @@ jobs:
         exit 0
         
     # ============================================
-    # 6. SHOW RESULTS
+    # 5. SHOW RESULTS
     # ============================================
     - name: Show results
       run: |
@@ -198,12 +156,12 @@ jobs:
         echo "=========================================="
         
     # ============================================
-    # 7. COMMIT FILES
+    # 6. COMMIT FILES
     # ============================================
     - name: Commit files
       run: |
         git config user.name "MRH Bot"
-        git config.user.email "bot@local"
+        git config user.email "bot@local"
         git add downloads/ || true
         git diff --staged --quiet || git commit -m "MRH: Downloads [skip ci]"
         git push || true
