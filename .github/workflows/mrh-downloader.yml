@@ -48,7 +48,7 @@ jobs:
         URL=$(echo "${{ steps.msg.outputs.full }}" | grep -o 'dl-ig: [^ ]*' | cut -d' ' -f2)
         echo "📸 Instagram: $URL"
         cd downloads/instagram
-        yt-dlp --no-playlist "$URL"
+        yt-dlp --no-playlist "$URL" --retries 5
         cd ../..
         echo "✅ Instagram done"
         
@@ -62,20 +62,12 @@ jobs:
         echo "🐙 GitHub: $URL"
         mkdir -p downloads/github
         cd downloads/github
-        
         curl -L -O --retry 5 --retry-delay 2 --max-time 600 --keepalive-time 60 --continue-at - "$URL"
-        
-        if [ $? -eq 0 ]; then
-          echo "✅ GitHub download successful"
-        else
-          echo "❌ GitHub download failed"
-          exit 1
-        fi
-        
         cd ../..
+        echo "✅ GitHub done"
         
     # ============================================
-    # 3. DIRECT LINK (با تشخیص خودکار حجم و فشرده‌سازی)
+    # 3. DIRECT LINK (با تشخیص خودکار حجم و فشرده‌سازی برای فایل‌های بالای 95 مگ)
     # ============================================
     - name: Download direct link
       if: contains(steps.msg.outputs.full, 'dl:') && !contains(steps.msg.outputs.full, 'dl-ig:') && !contains(steps.msg.outputs.full, 'dl-gh:')
@@ -83,49 +75,50 @@ jobs:
         URL=$(echo "${{ steps.msg.outputs.full }}" | grep -o 'dl: [^ ]*' | cut -d' ' -f2)
         echo "📁 Direct: $URL"
         
-        # Extract filename from URL
         FILENAME=$(basename "$URL" | cut -d '?' -f1)
         [ -z "$FILENAME" ] && FILENAME="file_$(date +%H%M%S)"
         
-        # Download the file to a temporary location
-        TMP_DIR="tmp_download_$$"
-        mkdir -p "$TMP_DIR"
-        cd "$TMP_DIR"
+        mkdir -p downloads/direct
         
         echo "⬇️ Downloading $FILENAME ..."
-        curl -L -O --retry 5 --retry-delay 2 --max-time 600 --keepalive-time 60 "$URL"
+        curl -L -o "downloads/direct/$FILENAME" --retry 5 --retry-delay 2 --max-time 600 --keepalive-time 60 "$URL"
         
-        if [ ! -f "$FILENAME" ]; then
-          echo "❌ Download failed, file not found."
+        if [ ! -f "downloads/direct/$FILENAME" ]; then
+          echo "❌ Download failed"
           exit 1
         fi
         
-        # Get file size in MB
-        FILE_SIZE_MB=$(du -m "$FILENAME" | cut -f1)
-        echo "📊 Downloaded file size: ${FILE_SIZE_MB} MB"
-        
-        cd ..
-        
-        # Decide based on file size: if less than 95 MB, move directly; else, split and zip
-        if [ "$FILE_SIZE_MB" -lt 95 ]; then
-          echo "✅ File size is less than 95 MB, moving directly to downloads/direct/"
-          mkdir -p downloads/direct
-          mv "$TMP_DIR/$FILENAME" downloads/direct/
+        # گرفتن حجم فایل بر حسب مگابایت
+        if command -v stat &> /dev/null; then
+          FILE_SIZE_BYTES=$(stat -c%s "downloads/direct/$FILENAME" 2>/dev/null || stat -f%z "downloads/direct/$FILENAME" 2>/dev/null)
+          FILE_SIZE_MB=$((FILE_SIZE_BYTES / 1024 / 1024))
+          echo "📊 File size: ${FILE_SIZE_MB} MB"
+          
+          # اگر حجم فایل بیشتر از 95 مگابایت بود، آن را تکه تکه و زیپ کن
+          if [ $FILE_SIZE_MB -ge 95 ]; then
+            echo "⚙️ File is ≥95 MB. Splitting and compressing..."
+            
+            cd downloads/direct
+            
+            # تکه تکه کردن فایل به قطعات 95 مگابایتی
+            split -b $((95 * 1024 * 1024)) "$FILENAME" "${FILENAME}.part."
+            
+            # زیپ کردن قطعات
+            zip "${FILENAME}.zip" "${FILENAME}.part."* > /dev/null 2>&1
+            
+            # حذف فایل اصلی و قطعات
+            rm -f "$FILENAME"
+            rm -f "${FILENAME}.part."*
+            
+            cd ../..
+            echo "✅ File compressed to ${FILENAME}.zip"
+          else
+            echo "✅ File size <95 MB, saved directly"
+          fi
         else
-          echo "⚙️ File size is 95 MB or larger. Splitting and compressing to avoid GitHub limit..."
-          cd "$TMP_DIR"
-          # Split the file into 95 MB parts (95*1024*1024 bytes)
-          split -b $((95*1024*1024)) "$FILENAME" "${FILENAME}.part."
-          # Zip the parts
-          zip "${FILENAME}.zip" "${FILENAME}.part."*
-          cd ..
-          mkdir -p downloads/direct
-          mv "$TMP_DIR/${FILENAME}.zip" downloads/direct/
-          echo "✅ File split and compressed into ${FILENAME}.zip"
+          echo "⚠️ Could not determine file size, saved as is"
         fi
         
-        # Clean up temporary directory
-        rm -rf "$TMP_DIR"
         echo "✅ Direct download processed"
         
     # ============================================
@@ -161,7 +154,7 @@ jobs:
     - name: Commit files
       run: |
         git config user.name "MRH Bot"
-        git config user.email "bot@local"
+        git config user.email "bot@localhost"
         git add downloads/ || true
         git diff --staged --quiet || git commit -m "MRH: Downloads [skip ci]"
         git push || true
