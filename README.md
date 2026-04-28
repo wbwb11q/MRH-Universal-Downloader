@@ -61,8 +61,7 @@
 ### مرحله 4: اولین دانلود تست
 1. هر فایلی را در ریپو ویرایش کنید (مثلاً `README.md`)
 2. در کامیت مسیج بنویسید:
-dl: https://raw.githubusercontent.com/sample/test-file/main/sample.txt
-
+`dl: https://raw.githubusercontent.com/sample/test-file/main/sample.txt`
 3. روی **Commit changes** کلیک کنید
 4. بعد از ۱-۲ دقیقه، به برگه **Code** بروید
 5. پوشه `downloads/direct/` را باز کنید
@@ -79,8 +78,8 @@ dl: https://raw.githubusercontent.com/sample/test-file/main/sample.txt
 | دستور | کاربرد | مثال |
 |-------|--------|------|
 | `dl-ig: URL` | دانلود از اینستاگرام (پست، ریلز، عکس) | `dl-ig: https://www.instagram.com/reel/xxxxx` |
-| `dl-gh: URL` | دانلود از گیت‌هاب (ریلیزها) | `dl-gh: https://github.com/user/repo/releases/download/v1/file.zip` |
-| `dl: URL1 URL2` | دانلود مستقیم از هر سایت (موزیک، ویدیو، عکس، نرم‌افزار) | `dl: https://example.com/music.mp3 https://example.com/photo.jpg` |
+| `dl-gh: URL` | دانلود از گیت‌هاب (ریلیزها) | `dl-gh: https://github.com/user/repo/releases/download/v1/app.zip` |
+| `dl: URL` | دانلود مستقیم از هر سایت (موزیک، ویدیو، عکس، نرم‌افزار) | `dl: https://example.com/music.mp3` |
 | `dl-stop` | توقف اضطراری دانلود | `dl-stop` |
 
 ---
@@ -108,10 +107,10 @@ dl: https://raw.githubusercontent.com/sample/test-file/main/sample.txt
 **س: آیا این ابزار رایگان است؟**  
 ج: بله، ۱۰۰٪ رایگان. فقط یک حساب گیت‌هاب نیاز دارید.
 
-**س: چرا یوتیوب پشتیبانی نمی‌شود؟**  
-ج: محدودیت فنی در سرورهای گیت‌هاب. در صورت رفع مشکل، اضافه خواهد شد.
+**س: چرا دانلود اینستاگرام گاهی کار نمی‌کند؟**  
+ج: اینستاگرام محدودیت درخواست دارد. چند ساعت صبر کنید و دوباره امتحان کنید.
 
-**س: هر چند وقت باید فورک را حذف کنم؟**  
+**س: هر چند وقت باید فورک را حذف و دوباره بسازم؟**  
 ج: هر ۲-۳ ماه یا وقتی پوشه `downloads` پر شد.
 
 **س: چطور بفهمم دانلود تمام شده؟**  
@@ -152,9 +151,7 @@ Go to **Settings → Actions → General → Workflow permissions** → Select *
 ### Step 4: First Test Download
 1. Edit any file in your repo (e.g., `README.md`)
 2. In commit message write:
-
-dl: https://raw.githubusercontent.com/sample/test-file/main/sample.txt
-
+`dl: https://raw.githubusercontent.com/sample/test-file/main/sample.txt`
 3. Click **Commit changes**
 4. After 1-2 minutes, go to **Code** tab
 5. Open `downloads/direct/` folder
@@ -171,8 +168,8 @@ dl: https://raw.githubusercontent.com/sample/test-file/main/sample.txt
 | Command | Purpose | Example |
 |---------|---------|---------|
 | `dl-ig: URL` | Download from Instagram (post, reel, photo) | `dl-ig: https://www.instagram.com/reel/xxxxx` |
-| `dl-gh: URL` | Download from GitHub releases | `dl-gh: https://github.com/user/repo/releases/download/v1/file.zip` |
-| `dl: URL1 URL2` | Direct download from any site | `dl: https://example.com/music.mp3 https://example.com/photo.jpg` |
+| `dl-gh: URL` | Download from GitHub releases | `dl-gh: https://github.com/user/repo/releases/download/v1/app.zip` |
+| `dl: URL` | Direct download from any site | `dl: https://example.com/music.mp3` |
 | `dl-stop` | Emergency stop | `dl-stop` |
 
 ---
@@ -200,8 +197,8 @@ dl: https://raw.githubusercontent.com/sample/test-file/main/sample.txt
 **Q: Is this free?**  
 A: Yes, 100% free. Only a GitHub account needed.
 
-**Q: Why no YouTube support?**  
-A: Technical limitation on GitHub servers. Will be added if resolved.
+**Q: Why does Instagram sometimes fail?**  
+A: Instagram has rate limits. Wait a few hours and try again.
 
 **Q: How often to refresh fork?**  
 A: Every 2-3 months or when `downloads` folder is full.
