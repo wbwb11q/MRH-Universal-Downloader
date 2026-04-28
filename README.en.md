@@ -114,7 +114,7 @@
 |---------|---------|---------|
 | `dl-ig: URL` | Download from Instagram (post, reel, photo, video) | `dl-ig: https://www.instagram.com/reel/xxxxx` |
 | `dl-gh: URL` | Download from GitHub (releases and files) | `dl-gh: https://github.com/user/repo/releases/download/v1/app.zip` |
-| `dl: URL1 URL2` | Direct download from any site (music, video, photo, software) | `dl: https://example.com/music.mp3 https://example.com/photo.jpg` |
+| `dl: URL` | Direct download from any site (music, video, photo, software) | `dl: https://example.com/music.mp3` |
 | `dl-stop` | Emergency stop | `dl-stop` |
 
 ---
@@ -147,9 +147,6 @@ A: Yes, 100% free. Only a GitHub account needed.
 
 **Q: File size limit?**  
 A: Max 20GB per run.
-
-**Q: Why no YouTube support?**  
-A: Technical limitation on GitHub servers. Will be added if resolved.
 
 **Q: Why does Instagram sometimes fail?**  
 A: Instagram has rate limits. Wait a few hours and try again.
