@@ -22,10 +22,12 @@ jobs:
       with:
         python-version: '3.11'
         
-    - name: Install tools
-      run: |
-        pip install --upgrade yt-dlp
-        yt-dlp --version
+    - name: Install yt-dlp with full features
+      uses: AnimMouse/setup-yt-dlp@v3
+      with:
+        aria2: true
+        ejs-node: true
+        ffmpeg: true
         
     - name: Create folders
       run: |
@@ -42,7 +44,7 @@ jobs:
         echo "📝 Commit: $MSG"
         
     # ============================================
-    # 1. YOUTUBE (ساده و بی‌دردسر - کیفیت پایین)
+    # 1. YOUTUBE (با جدیدترین روش)
     # ============================================
     - name: Download from YouTube
       if: contains(steps.msg.outputs.full, 'dl-yt:')
@@ -54,11 +56,15 @@ jobs:
         cd downloads/youtube
         
         if [[ "${{ steps.msg.outputs.full }}" == *"(mp3)"* ]]; then
-          echo "🎵 Downloading audio (MP3)..."
-          yt-dlp -x --audio-format mp3 --audio-quality 2 --no-playlist --retries 5 "$URL"
+          echo "🎵 Downloading audio..."
+          yt-dlp -x --audio-format mp3 --audio-quality 2 --no-playlist --retries 5 \
+            --extractor-args "youtube:player-client=default,tv" \
+            "$URL"
         else
-          echo "🎥 Downloading video (lowest quality)..."
-          yt-dlp -f "worst[ext=mp4]" --no-playlist --retries 5 "$URL"
+          echo "🎥 Downloading video..."
+          yt-dlp -f "worst[ext=mp4]" --no-playlist --retries 5 \
+            --extractor-args "youtube:player-client=default,tv" \
+            "$URL"
         fi
         
         cd ../..
@@ -88,12 +94,12 @@ jobs:
         echo "🐙 GitHub: $URL"
         
         cd downloads/github
-        curl -L -O --retry 5 --retry-delay 2 "$URL"
+        curl -L -O --retry 5 --retry-delay 2 --fail-with-body "$URL"
         cd ../..
         echo "✅ GitHub done"
         
     # ============================================
-    # 4. DIRECT LINK (هر سایت دیگر)
+    # 4. DIRECT LINK
     # ============================================
     - name: Download direct link
       if: contains(steps.msg.outputs.full, 'dl:') && !contains(steps.msg.outputs.full, 'dl-yt:') && !contains(steps.msg.outputs.full, 'dl-ig:') && !contains(steps.msg.outputs.full, 'dl-gh:')
@@ -105,7 +111,7 @@ jobs:
         FILENAME=$(basename "$URL" | cut -d '?' -f1)
         [ -z "$FILENAME" ] && FILENAME="file_$(date +%H%M%S)"
         
-        curl -L -o "$FILENAME" --retry 5 --retry-delay 2 --connect-timeout 30 "$URL"
+        curl -L -o "$FILENAME" --retry 5 --retry-delay 2 --connect-timeout 30 --fail-with-body "$URL"
         cd ../..
         echo "✅ Direct done"
         
@@ -119,9 +125,9 @@ jobs:
         exit 0
         
     # ============================================
-    # 6. RESULTS
+    # 6. گام مهم: نمایش و Commit فایل‌ها
     # ============================================
-    - name: Show results
+    - name: List downloaded files
       run: |
         echo ""
         echo "=========================================="
@@ -132,17 +138,24 @@ jobs:
           echo ""
           echo "📊 Total size: $(du -sh downloads | cut -f1)"
         else
-          echo "⚠️ No files found"
+          echo "⚠️ No files found in downloads folder"
         fi
         echo "=========================================="
         
     # ============================================
-    # 7. COMMIT
+    # 7. Commit و Push (مهم!)
     # ============================================
-    - name: Commit files
+    - name: Commit and push files
       run: |
-        git config user.name "MRH Downloader"
-        git config user.email "mrh@downloader.local"
-        git add downloads/ || true
-        git diff --staged --quiet || git commit -m "MRH: Downloads [skip ci]"
-        git push || true
+        git config user.name "MRH Downloader Bot"
+        git config user.email "mrh-bot@downloader.local"
+        
+        # بررسی وجود فایل‌ها
+        if [ -d downloads ] && [ "$(ls -A downloads 2>/dev/null)" ]; then
+          git add downloads/
+          git commit -m "MRH: Add downloaded files [skip ci]" || echo "No changes to commit"
+          git push
+          echo "✅ Files committed and pushed to repository"
+        else
+          echo "⚠️ No files to commit"
+        fi
