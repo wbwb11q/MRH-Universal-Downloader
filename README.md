@@ -67,7 +67,7 @@ dl: https://raw.githubusercontent.com/sample/test-file/main/sample.txt
 4. بعد از ۱-۲ دقیقه، به برگه **Code** بروید
 5. پوشه `downloads/direct/` را باز کنید
 6. ✅ فایل `sample.txt` را آنجا می‌بینید
-
+ 
 ### مرحله 5: انتقال فایل به موبایل یا کامپیوتر
 - **کامپیوتر:** روی فایل کلیک → Download
 - **موبایل:** برنامه GitHub → باز کردن فایل → Download
